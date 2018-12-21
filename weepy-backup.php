@@ -10,8 +10,10 @@ if (!defined('WEEPY_BACKUP_TEMP')) {
 if (!is_dir(WEEPY_BACKUP_TEMP)) {
   mkdir(WEEPY_BACKUP_TEMP);
 }
-define('WEEPY_BACKUP_LOOKUP_PATH',WEEPY_BACKUP_TEMP . '/.sha1')
-
+define('WEEPY_BACKUP_LOOKUP_PATH',WEEPY_BACKUP_TEMP . '/.sha1');
+if (!is_dir(WEEPY_BACKUP_LOOKUP_PATH)) {
+  mkdir(WEEPY_BACKUP_LOOKUP_PATH);
+}
 
 class WeepyBackup {
 

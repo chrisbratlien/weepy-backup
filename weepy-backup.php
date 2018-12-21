@@ -1,32 +1,34 @@
 <?php
 require_once('functions.php');
 
-define('LOOKUP_PATH',DATA_PATH . '/sha1');
 
-if (!is_dir(LOOKUP_PATH)) {
-  mkdir(LOOKUP_PATH);
+
+if (!defined('WEEPY_BACKUP_TEMP')) {
+  die('must define WEEPY_BACKUP_TEMP');
 }
+
+if (!is_dir(WEEPY_BACKUP_TEMP)) {
+  mkdir(WEEPY_BACKUP_TEMP);
+}
+define('WEEPY_BACKUP_LOOKUP_PATH',WEEPY_BACKUP_TEMP . '/.sha1')
+
 
 class WeepyBackup {
 
   static function get_lookup_path_of_hash($sha1) {
-    //return DATA_PATH . '/sha1/' . substr($sha1,0,2) . '/' . substr($sha1,2); 
     $first2 = substr($sha1,0,2);
     $rest = substr($sha1,2);
-    return sprintf('%s/%s/%s',LOOKUP_PATH,$first2,$rest);
+    return sprintf('%s/%s/%s',WEEPY_BACKUP_LOOKUP_PATH,$first2,$rest);
   }
 
   static function get_lookup_dir_of_hash($sha1) {
-    /////return DATA_PATH . '/sha1/' . substr($sha1,0,2);
     $first2 = substr($sha1,0,2);
-    return sprintf('%s/%s',LOOKUP_PATH,$first2);
+    return sprintf('%s/%s',WEEPY_BACKUP_LOOKUP_PATH,$first2);
   }
 
   static function put_into_inventory_db($item) {
-    //pr($item,'item?');
     $sha1 = $item['sha1'];
     $dir = static::get_lookup_dir_of_hash($sha1);
-    //pr($dir,'dir?');
     if (!is_dir($dir)) {
       mkdir($dir);
     }  
@@ -47,7 +49,6 @@ class WeepyBackup {
         }    
         return [
             'relative_path' => $relative_path,
-            //'path' => $f,
             'sha1' => $sha1
         ];
     },$filtered);
@@ -65,6 +66,11 @@ class WeepyBackup {
     return apply_filters('get_backup_volumes_menu',[]);
   }
 
+  static function return_404($msg) {
+    header("HTTP/1.0 404 Not Found");
+    die($msg);
+  }
+
   static function serve_backup_endpoint() {
 
     $opts = [];
@@ -75,13 +81,10 @@ class WeepyBackup {
       $sha1 = $opts['sha1'];
       $hit = static::lookup_relative_path($sha1);
       //pr($hit,'hit');
-      //die('exiting early');
-      // the file name of the download, change this if needed
-      $full_path = APP_PATH . '/' . preg_replace('/^\/+/','',$hit);////['relative_path'];
+      $full_path = APP_PATH . '/' . preg_replace('/^\/+/','',$hit);
       $fresh_sha1 = sha1_file($full_path);
       if ($fresh_sha1 !== $sha1) {
-        pr($hit,sprintf('fresh sha1 %s does not match stored sha1 %s',$fresh_sha1,$sha1));
-        die(123);
+        static::return_404(sprintf('fresh sha1 %s does not match stored sha1 %s',$fresh_sha1,$sha1));
       }
       //pp($full_path,'full_path');
       $public_name = basename($full_path);
@@ -115,9 +118,7 @@ class WeepyBackup {
       header('Content-Type: application/json');
       $menu = static::get_volumes_menu();
       $set = $menu[$volume];
-      //($set,'set');
       $list = static::get_inventory_from_fs($set);
-      //pr($list,'list');
       foreach($list as $item) {
           static::put_into_inventory_db($item);
       }

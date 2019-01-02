@@ -116,9 +116,12 @@ class WeepyBackup {
 
     if (array_key_exists('volume',$opts)){
       $volume = $opts['volume'];
-      preg_match('/^\d+$/',$volume) or die('not numeric');
+      preg_match('/^-?\d+$/',$volume) or die('not numeric');
       header('Content-Type: application/json');
       $menu = static::get_volumes_menu();
+      if ($volume < 0) {
+        $volume += count($menu);
+      }
       $set = $menu[$volume];
       $list = static::get_inventory_from_fs($set);
       foreach($list as $item) {
